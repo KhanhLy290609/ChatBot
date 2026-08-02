@@ -125,23 +125,39 @@ class _HomeScreenState extends State<HomeScreen>
               })
           .toList();
 
-      final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$_apiKey');
+      final candidateModels = [
+        'gemini-3.6-flash',
+        'gemini-2.0-flash',
+        'gemini-flash-latest',
+      ];
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'system_instruction': {
-            'parts': [
-              {'text': systemPrompt}
-            ]
-          },
-          'contents': contents,
-        }),
-      );
+      http.Response? response;
+      for (final modelName in candidateModels) {
+        final url = Uri.parse(
+            'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$_apiKey');
 
-      if (response.statusCode == 200) {
+        final res = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'system_instruction': {
+              'parts': [
+                {'text': systemPrompt}
+              ]
+            },
+            'contents': contents,
+          }),
+        );
+
+        if (res.statusCode == 200) {
+          response = res;
+          break;
+        } else {
+          response = res;
+        }
+      }
+
+      if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
         String botText = 'Không có phản hồi từ AI.';
         final parts = data['candidates']?[0]?['content']?['parts'] as List?;
@@ -157,20 +173,21 @@ class _HomeScreenState extends State<HomeScreen>
         setState(() {
           _messages.add({'role': 'assistant', 'content': botText});
         });
-      } else if (response.statusCode == 429) {
+      } else if (response != null && response.statusCode == 429) {
         setState(() {
           _messages.add({
             'role': 'assistant',
             'content':
-                '⚠️ Tài khoản Gemini API vừa chạm giới hạn tần suất (Quota Exceeded / 429). Vui lòng chờ khoảng 30 giây rồi gửi lại câu hỏi nhé!'
+                '⚠️ Hệ thống AI vừa chạm giới hạn tần suất (Quota Exceeded / 429). Vui lòng chờ khoảng 30 giây rồi thử lại câu hỏi nhé!'
           });
         });
       } else {
+        final errCode = response?.statusCode ?? 'Unknown';
         setState(() {
           _messages.add({
             'role': 'assistant',
             'content':
-                '⚠️ Lỗi kết nối Gemini API (${response.statusCode}). Vui lòng thử lại sau giây lát!'
+                '⚠️ Lỗi kết nối Gemini API ($errCode). Vui lòng thử lại sau giây lát!'
           });
         });
       }
