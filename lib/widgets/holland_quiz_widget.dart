@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class HollandQuizWidget extends StatefulWidget {
   final Function(String) onSendToChat;
+  final Color primaryColor;
 
-  const HollandQuizWidget({super.key, required this.onSendToChat});
+  const HollandQuizWidget({
+    super.key,
+    required this.onSendToChat,
+    this.primaryColor = const Color(0xFF6366F1),
+  });
 
   @override
   State<HollandQuizWidget> createState() => _HollandQuizWidgetState();
@@ -85,6 +90,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = widget.primaryColor;
 
     if (_currentQ >= _questions.length) {
       final counts = <String, int>{'R': 0, 'I': 0, 'A': 0, 'S': 0, 'E': 0, 'C': 0};
@@ -105,21 +111,25 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isDark
-                    ? [const Color(0xFF1E1B4B), const Color(0xFF2E1065)]
-                    : [const Color(0xFFFAF7FF), const Color(0xFFF3ECFF)],
+                    ? [
+                        primary.withValues(alpha: 0.3),
+                        primary.withValues(alpha: 0.15)
+                      ]
+                    : [
+                        primary.withValues(alpha: 0.06),
+                        primary.withValues(alpha: 0.14)
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24.0),
               border: Border.all(
-                color: isDark
-                    ? const Color(0xFF4C1D95).withValues(alpha: 0.5)
-                    : const Color(0xFFE9D5FF),
+                color: primary.withValues(alpha: isDark ? 0.4 : 0.25),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                  color: primary.withValues(alpha: 0.08),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 )
@@ -130,8 +140,8 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF6366F1),
+                  decoration: BoxDecoration(
+                    color: primary,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -156,7 +166,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF5B46E0),
+                    color: primary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -189,9 +199,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF312E81)
-                            : const Color(0xFFEDE9FE),
+                        color: primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(50),
                       ),
                       child: Text(
@@ -199,9 +207,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? const Color(0xFFC084FC)
-                              : const Color(0xFF5B46E0),
+                          color: primary,
                         ),
                       ),
                     );
@@ -210,7 +216,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6366F1),
+                    backgroundColor: primary,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 48),
                     shape: RoundedRectangleBorder(
@@ -260,7 +266,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
           borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
             value: (_currentQ + 1) / _questions.length,
-            color: const Color(0xFF6366F1),
+            color: primary,
             backgroundColor: isDark
                 ? const Color(0xFF1E293B)
                 : const Color(0xFFE2E8F0),
@@ -330,9 +336,9 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                         ),
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
-                      color: Color(0xFF6366F1),
+                      color: primary,
                     )
                   ],
                 ),

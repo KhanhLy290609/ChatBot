@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class PillPromptChips extends StatelessWidget {
   final Function(String) onPromptSelected;
+  final Color primaryColor;
 
-  const PillPromptChips({super.key, required this.onPromptSelected});
+  const PillPromptChips({
+    super.key,
+    required this.onPromptSelected,
+    this.primaryColor = const Color(0xFF6366F1),
+  });
 
   static const List<String> _prompts = [
     'Tôi giỏi Toán và Lý',
@@ -32,14 +37,12 @@ class PillPromptChips extends StatelessWidget {
                   color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(50.0),
                   border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF334155)
-                        : const Color(0xFFE2E8F0),
+                    color: primaryColor.withValues(alpha: isDark ? 0.35 : 0.25),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
+                      color: primaryColor.withValues(alpha: 0.05),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     )
@@ -50,9 +53,7 @@ class PillPromptChips extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? const Color(0xFFC084FC)
-                        : const Color(0xFF5B46E0),
+                    color: primaryColor,
                   ),
                 ),
               ),

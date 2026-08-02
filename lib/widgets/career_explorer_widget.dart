@@ -4,11 +4,13 @@ import '../models/career_model.dart';
 class CareerExplorerWidget extends StatelessWidget {
   final Function(String) onAskAI;
   final List<CareerModel> careers;
+  final Color primaryColor;
 
   const CareerExplorerWidget({
     super.key,
     required this.onAskAI,
     this.careers = defaultCareers,
+    this.primaryColor = const Color(0xFF6366F1),
   });
 
   @override
@@ -51,9 +53,7 @@ class CareerExplorerWidget extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? const Color(0xFFA78BFA)
-                            : const Color(0xFF5B46E0),
+                        color: primaryColor,
                       ),
                     ),
                   ),
@@ -61,15 +61,15 @@ class CareerExplorerWidget extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                      color: primaryColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
                       'Khối ${c.block}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF6366F1),
+                        color: primaryColor,
                       ),
                     ),
                   ),
@@ -103,7 +103,7 @@ class CareerExplorerWidget extends StatelessWidget {
               const SizedBox(height: 14),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
+                  backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 44),
                   shape: RoundedRectangleBorder(

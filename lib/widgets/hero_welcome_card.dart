@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class HeroWelcomeCard extends StatelessWidget {
-  const HeroWelcomeCard({super.key});
+  final Color primaryColor;
+
+  const HeroWelcomeCard({
+    super.key,
+    this.primaryColor = const Color(0xFF6366F1),
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,21 +18,25 @@ class HeroWelcomeCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
-              ? [const Color(0xFF1E1B4B), const Color(0xFF2E1065)]
-              : [const Color(0xFFFAF7FF), const Color(0xFFF3ECFF)],
+              ? [
+                  primaryColor.withValues(alpha: 0.3),
+                  primaryColor.withValues(alpha: 0.15),
+                ]
+              : [
+                  primaryColor.withValues(alpha: 0.06),
+                  primaryColor.withValues(alpha: 0.14),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24.0),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF4C1D95).withValues(alpha: 0.5)
-              : const Color(0xFFE9D5FF).withValues(alpha: 0.8),
+          color: primaryColor.withValues(alpha: isDark ? 0.4 : 0.25),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.06),
+            color: primaryColor.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 6),
           )
@@ -41,7 +50,7 @@ class HeroWelcomeCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF5B46E0),
+              color: isDark ? primaryColor : primaryColor,
               height: 1.2,
             ),
           ),

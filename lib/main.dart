@@ -470,8 +470,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   index: _currentTabIndex,
                   children: [
                     _buildChatTab(isDark),
-                    HollandQuizWidget(onSendToChat: _sendFromOtherTabs),
-                    CareerExplorerWidget(onAskAI: _sendFromOtherTabs),
+                    HollandQuizWidget(
+                      onSendToChat: _sendFromOtherTabs,
+                      primaryColor: _primaryColor,
+                    ),
+                    CareerExplorerWidget(
+                      onAskAI: _sendFromOtherTabs,
+                      primaryColor: _primaryColor,
+                    ),
                     ProfileScreenWidget(
                       userName: _currentName,
                       userEmail: widget.userEmail,
@@ -513,9 +519,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       children: [
-        const HeroWelcomeCard(),
+        HeroWelcomeCard(primaryColor: _primaryColor),
         const SizedBox(height: 20),
-        PillPromptChips(onPromptSelected: _sendMessage),
+        PillPromptChips(
+          onPromptSelected: _sendMessage,
+          primaryColor: _primaryColor,
+        ),
         const SizedBox(height: 16),
         ..._messages.map((msg) {
           final isUser = msg['role'] == 'user';
