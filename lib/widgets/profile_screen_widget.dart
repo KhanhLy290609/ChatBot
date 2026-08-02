@@ -196,17 +196,32 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
     if (url.startsWith('data:image')) {
       try {
         final base64Str = url.split(',').last;
-        return CircleAvatar(
-          radius: radius,
-          backgroundImage: MemoryImage(base64Decode(base64Str)),
+        final bytes = base64Decode(base64Str);
+        return ClipOval(
+          child: Image.memory(
+            bytes,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, err, stack) => _fallbackAvatar(radius),
+          ),
         );
       } catch (_) {}
     } else if (url.startsWith('http')) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: NetworkImage(url),
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => _fallbackAvatar(radius),
+        ),
       );
     }
+    return _fallbackAvatar(radius);
+  }
+
+  Widget _fallbackAvatar(double radius) {
     return CircleAvatar(
       radius: radius,
       backgroundColor: widget.primaryColor.withValues(alpha: 0.15),

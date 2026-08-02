@@ -707,15 +707,34 @@ class _HomeScreenState extends State<HomeScreen> {
     if (url.startsWith('data:image')) {
       try {
         final base64Str = url.split(',').last;
-        return CircleAvatar(
-          radius: 16,
-          backgroundImage: MemoryImage(base64Decode(base64Str)),
+        final bytes = base64Decode(base64Str);
+        return ClipOval(
+          child: Image.memory(
+            bytes,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, err, stack) => const CircleAvatar(
+              radius: 16,
+              backgroundColor: Color(0xFFEC4899),
+              child: Icon(Icons.person, color: Colors.white, size: 18),
+            ),
+          ),
         );
       } catch (_) {}
     } else if (url.startsWith('http')) {
-      return CircleAvatar(
-        radius: 16,
-        backgroundImage: NetworkImage(url),
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: 32,
+          height: 32,
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => const CircleAvatar(
+            radius: 16,
+            backgroundColor: Color(0xFFEC4899),
+            child: Icon(Icons.person, color: Colors.white, size: 18),
+          ),
+        ),
       );
     }
     return const CircleAvatar(
