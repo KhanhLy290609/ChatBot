@@ -52,7 +52,7 @@ class CareerExplorerWidget extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      c.title,
+                      c.getTitle(language),
                       style: TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.bold,
@@ -80,7 +80,7 @@ class CareerExplorerWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                c.desc,
+                c.getDesc(language),
                 style: TextStyle(
                   fontSize: 13.5,
                   color: isDark ? Colors.grey.shade300 : const Color(0xFF475569),
@@ -95,8 +95,8 @@ class CareerExplorerWidget extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     isEn
-                        ? 'Reference Salary: ${c.salary}'
-                        : 'Lương tham khảo: ${c.salary}',
+                        ? 'Reference Salary: ${c.getSalary(language)}'
+                        : 'Lương tham khảo: ${c.getSalary(language)}',
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: Colors.green,
@@ -123,8 +123,8 @@ class CareerExplorerWidget extends StatelessWidget {
                 onPressed: () {
                   onAskAI(
                     isEn
-                        ? 'Please advise in detail about **${c.title}** (Block ${c.block}): Benchmark scores, top universities, and career opportunities!'
-                        : 'Nhờ EduPath AI tư vấn chi tiết về ngành **${c.title}** (Khối ${c.block}): Điểm chuẩn, các trường ĐH top đầu và cơ hội việc làm!',
+                        ? 'Please advise in detail about **${c.getTitle(language)}** (Block ${c.block}): Benchmark scores, top universities, and career opportunities!'
+                        : 'Nhờ EduPath AI tư vấn chi tiết về ngành **${c.getTitle(language)}** (Khối ${c.block}): Điểm chuẩn, các trường ĐH top đầu và cơ hội việc làm!',
                   );
                 },
               )
