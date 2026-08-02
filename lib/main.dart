@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'widgets/hero_welcome_card.dart';
 import 'widgets/pill_prompt_chips.dart';
 import 'widgets/floating_bottom_dock.dart';
@@ -12,7 +14,17 @@ import 'widgets/holland_quiz_widget.dart';
 import 'widgets/career_explorer_widget.dart';
 import 'widgets/login_screen_widget.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Supabase.initialize(
+      url: 'https://ugrlddyybprhkqkprvnb.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncmxkZHl5YnByaGtxa3Budm5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MjI1MTAsImV4cCI6MjEwMTE5ODUxMH0.IznZukmf7aEgEbaAFPJ4oGgsa5N0Ek6k9AOKYQA5PEk',
+    );
+  } catch (e) {
+    debugPrint('Supabase init: $e');
+  }
   runApp(const EduPathApp());
 }
 

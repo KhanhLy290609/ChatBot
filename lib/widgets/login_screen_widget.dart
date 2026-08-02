@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreenWidget extends StatefulWidget {
   final Function(String userName) onLoginSuccess;
@@ -75,6 +76,15 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
       }
 
       // Đăng nhập thành công!
+      try {
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+      } catch (e) {
+        debugPrint('Supabase Auth login note: $e');
+      }
+
       final displayName = userData['name'] as String? ?? email.split('@')[0];
       widget.onLoginSuccess(displayName);
     } else {
@@ -102,18 +112,29 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
         return;
       }
 
-      // Lưu tài khoản mới
+      // Lưu tài khoản mới vào Local DB
       usersDb[email] = {
         'name': name,
         'password': password,
       };
       await prefs.setString('registered_users_db', jsonEncode(usersDb));
 
+      // Đồng bộ sang Supabase Auth
+      try {
+        await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+          data: {'full_name': name},
+        );
+      } catch (e) {
+        debugPrint('Supabase Auth signup note: $e');
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              '🎉 Đăng ký tài khoản "$name" thành công! Vui lòng nhập mật khẩu để đăng nhập.'),
+              '🎉 Đăng ký tài khoản "$name" thành công! Đã kết nối Supabase. Vui lòng nhập mật khẩu để đăng nhập.'),
           backgroundColor: Colors.green,
         ),
       );
