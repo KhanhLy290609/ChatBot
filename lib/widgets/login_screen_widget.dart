@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreenWidget extends StatefulWidget {
   final Function(String userName) onLoginSuccess;
@@ -22,21 +24,101 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _handleSubmit() {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
+  Future<void> _handleSubmit() async {
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập Email hoặc Tên đăng nhập!')),
+        const SnackBar(
+          content: Text('⚠️ Vui lòng nhập đầy đủ Email và Mật khẩu!'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
-    final name = _isLoginTab
-        ? (email.contains('@') ? email.split('@')[0] : email)
-        : (_nameController.text.trim().isNotEmpty
-            ? _nameController.text.trim()
-            : email);
 
-    widget.onLoginSuccess(name);
+    final prefs = await SharedPreferences.getInstance();
+    final String? usersJson = prefs.getString('registered_users_db');
+    Map<String, dynamic> usersDb = {};
+    if (usersJson != null && usersJson.isNotEmpty) {
+      try {
+        usersDb = jsonDecode(usersJson) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+
+    if (_isLoginTab) {
+      // Logic Đăng Nhập
+      if (!usersDb.containsKey(email)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                '❌ Tài khoản này chưa được đăng ký! Vui lòng chuyển sang tab Đăng Ký.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final userData = usersDb[email] as Map<String, dynamic>;
+      if (userData['password'] != password) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Mật khẩu không chính xác! Vui lòng kiểm tra lại.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Đăng nhập thành công!
+      final displayName = userData['name'] as String? ?? email.split('@')[0];
+      widget.onLoginSuccess(displayName);
+    } else {
+      // Logic Đăng Ký
+      if (name.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Vui lòng nhập Họ và tên để đăng ký!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      if (usersDb.containsKey(email)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                '⚠️ Email này đã được đăng ký! Vui lòng chuyển sang tab Đăng Nhập.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Lưu tài khoản mới
+      usersDb[email] = {
+        'name': name,
+        'password': password,
+      };
+      await prefs.setString('registered_users_db', jsonEncode(usersDb));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 Đăng ký tài khoản "$name" thành công!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      widget.onLoginSuccess(name);
+    }
   }
 
   @override
@@ -47,7 +129,8 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -268,7 +351,9 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
                         ),
                         icon: const Icon(Icons.g_mobiledata, size: 24),
                         label: const Text('Đăng nhập bằng Google'),
-                        onPressed: () => _handleSubmit(),
+                        onPressed: () {
+                          widget.onLoginSuccess('Học sinh Google');
+                        },
                       ),
                     ],
                   ),
