@@ -1,9 +1,8 @@
-name: Deploy to GitHub Pages
+name: Deploy Flutter Web to GitHub Pages
 
 on:
   push:
     branches:
-      - main
       - master
 
 permissions:
@@ -14,23 +13,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code 🛎️
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ⚙️
-        uses: actions/setup-node@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          distribution: 'zulu'
+          java-version: '17'
 
-      - name: Install Dependencies 📦
-        run: npm ci
-
-      - name: Build Project 🏗️
-        run: npm run build
-
-      - name: Deploy to GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
         with:
-          folder: dist
-          branch: gh-pages
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Flutter Web
+        run: flutter build web --release --base-href "/ChatBot/"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
