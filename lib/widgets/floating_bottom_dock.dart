@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class FloatingBottomDock extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapTab;
+  final Color primaryColor;
 
   const FloatingBottomDock({
     super.key,
     required this.currentIndex,
     required this.onTapTab,
+    this.primaryColor = const Color(0xFF6366F1),
   });
 
   @override
@@ -15,8 +17,8 @@ class FloatingBottomDock extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(50.0),
@@ -33,20 +35,30 @@ class FloatingBottomDock extends StatelessWidget {
         children: [
           _buildNavItem(
             index: 0,
-            icon: Icons.chat_bubble,
+            icon: Icons.chat_bubble_outline,
+            activeIcon: Icons.chat_bubble,
             label: 'Chat',
             isDark: isDark,
           ),
           _buildNavItem(
             index: 1,
             icon: Icons.psychology_outlined,
-            label: 'Holland Test',
+            activeIcon: Icons.psychology,
+            label: 'Holland',
             isDark: isDark,
           ),
           _buildNavItem(
             index: 2,
             icon: Icons.work_outline,
-            label: 'Careers',
+            activeIcon: Icons.work,
+            label: 'Ngành Hot',
+            isDark: isDark,
+          ),
+          _buildNavItem(
+            index: 3,
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Cá Nhân',
             isDark: isDark,
           ),
         ],
@@ -57,6 +69,7 @@ class FloatingBottomDock extends StatelessWidget {
   Widget _buildNavItem({
     required int index,
     required IconData icon,
+    required IconData activeIcon,
     required String label,
     required bool isDark,
   }) {
@@ -68,41 +81,39 @@ class FloatingBottomDock extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 18, vertical: 10)
-            : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+            : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? const Color(0xFF6366F1) : const Color(0xFF6366F1))
-              : Colors.transparent,
+          color: isSelected ? primaryColor : Colors.transparent,
           borderRadius: BorderRadius.circular(40.0),
         ),
         child: Row(
           children: [
             Icon(
-              icon,
-              size: 20,
+              isSelected ? activeIcon : icon,
+              size: 18,
               color: isSelected
                   ? Colors.white
                   : (isDark ? Colors.grey.shade400 : const Color(0xFF475569)),
             ),
             if (isSelected) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 label,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
             ] else ...[
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
               Text(
                 label,
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade400 : const Color(0xFF475569),
                   fontWeight: FontWeight.w500,
-                  fontSize: 12,
+                  fontSize: 11,
                 ),
               ),
             ]

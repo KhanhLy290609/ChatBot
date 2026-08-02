@@ -4,7 +4,6 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widgets/hero_welcome_card.dart';
@@ -13,6 +12,7 @@ import 'widgets/floating_bottom_dock.dart';
 import 'widgets/holland_quiz_widget.dart';
 import 'widgets/career_explorer_widget.dart';
 import 'widgets/login_screen_widget.dart';
+import 'widgets/profile_screen_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,6 +101,7 @@ class RootNavigation extends StatefulWidget {
 class _RootNavigationState extends State<RootNavigation> {
   bool _isLoggedIn = false;
   String _userName = '';
+  String _userEmail = '';
 
   @override
   void initState() {
@@ -111,12 +112,14 @@ class _RootNavigationState extends State<RootNavigation> {
   Future<void> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final savedName = prefs.getString('user_name');
+    final savedEmail = prefs.getString('user_email');
     final loggedIn = prefs.getBool('is_logged_in') ?? false;
 
     if (loggedIn && savedName != null && savedName.isNotEmpty) {
       setState(() {
         _isLoggedIn = true;
         _userName = savedName;
+        _userEmail = savedEmail ?? '';
       });
     }
   }
@@ -134,6 +137,7 @@ class _RootNavigationState extends State<RootNavigation> {
   Future<void> _handleGuestAccess() async {
     setState(() {
       _userName = 'Khách';
+      _userEmail = 'khach@edupath.ai';
       _isLoggedIn = true;
     });
   }
@@ -145,6 +149,7 @@ class _RootNavigationState extends State<RootNavigation> {
     setState(() {
       _isLoggedIn = false;
       _userName = '';
+      _userEmail = '';
     });
   }
 
@@ -161,6 +166,7 @@ class _RootNavigationState extends State<RootNavigation> {
       onToggleTheme: widget.onToggleTheme,
       themeMode: widget.themeMode,
       userName: _userName,
+      userEmail: _userEmail,
       onLogout: _handleLogout,
     );
   }
@@ -170,6 +176,7 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final ThemeMode themeMode;
   final String userName;
+  final String userEmail;
   final VoidCallback onLogout;
 
   const HomeScreen({
@@ -177,6 +184,7 @@ class HomeScreen extends StatefulWidget {
     required this.onToggleTheme,
     required this.themeMode,
     required this.userName,
+    required this.userEmail,
     required this.onLogout,
   });
 
@@ -190,6 +198,11 @@ class _HomeScreenState extends State<HomeScreen> {
       'QVEuQWI4Uk42SjZtTEZiQnFSSGVFRldVOE5FRnJOQzJlRWVBVVFVeTJXX2RfODV5NzlsSVE='));
 
   String _apiKey = _defaultApiKey;
+  late String _currentName;
+  String _avatarUrl = '';
+  Color _primaryColor = const Color(0xFF6366F1);
+  String _language = 'vi';
+
   final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
   final TextEditingController _inputController = TextEditingController();
@@ -197,20 +210,59 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadApiKey();
+    _currentName = widget.userName;
+    _loadPreferences();
   }
 
-  Future<void> _loadApiKey() async {
+  Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _apiKey = prefs.getString('gemini_api_key') ?? _defaultApiKey;
       if (_apiKey.trim().isEmpty) {
         _apiKey = _defaultApiKey;
       }
+      _avatarUrl = prefs.getString('user_avatar_url') ?? '';
+      _language = prefs.getString('app_language') ?? 'vi';
+      final colorVal = prefs.getInt('app_primary_color');
+      if (colorVal != null) {
+        _primaryColor = Color(colorVal);
+      }
     });
   }
 
-  Future<void> _saveApiKey(String key) async {
+  Future<void> _updateName(String newName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', newName);
+    setState(() {
+      _currentName = newName;
+    });
+  }
+
+  Future<void> _updateAvatar(String newAvatar) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_avatar_url', newAvatar);
+    setState(() {
+      _avatarUrl = newAvatar;
+    });
+  }
+
+  Future<void> _updateColor(Color newColor) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('app_primary_color', newColor.value);
+    setState(() {
+      _primaryColor = newColor;
+    });
+  }
+
+  Future<void> _updateLanguage(String newLang) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_language', newLang);
+    setState(() {
+      _language = newLang;
+    });
+  }
+
+  Future<void> _updateApiKey(String key) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('gemini_api_key', key);
     setState(() {
@@ -219,69 +271,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openSettingsDialog() {
-    final keyController = TextEditingController(text: _apiKey);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.settings, color: Color(0xFF6366F1)),
-            SizedBox(width: 8),
-            Text(
-              'Cài Đặt Hệ Thống',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Đang đăng nhập: ${widget.userName}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const Divider(height: 20),
-            const Text(
-              'Cấu hình Gemini API Key cá nhân:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: keyController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'AIzaSy...',
-                labelText: 'Gemini API Key',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-            icon: const Icon(Icons.logout, size: 16),
-            label: const Text('Đăng xuất'),
-            onPressed: () {
-              Navigator.pop(ctx);
-              widget.onLogout();
-            },
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              _saveApiKey(keyController.text.trim());
-              Navigator.pop(ctx);
-            },
-            child: const Text('Lưu Key'),
-          ),
-        ],
-      ),
-    );
+    setState(() {
+      _currentTabIndex = 3;
+    });
   }
 
   Future<void> _sendMessage(String text) async {
@@ -297,8 +289,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _inputController.clear();
 
     try {
-      const systemPrompt =
-          "Bạn là EduPath AI - Chuyên gia Tư vấn Hướng nghiệp THPT tại Việt Nam. Hãy tư vấn định hướng ngành học, khối thi (A00, A01, B00, C00, D01...), điểm chuẩn tham khảo, cơ hội việc làm & trường Đại học bằng tiếng Việt thân thiện, thấu hiểu và sử dụng định dạng Markdown.";
+      final langPrompt = _language == 'en'
+          ? "You are EduPath AI - High School Career Counseling Expert in Vietnam. Provide career orientation in English with friendly Markdown format."
+          : "Bạn là EduPath AI - Chuyên gia Tư vấn Hướng nghiệp THPT tại Việt Nam. Hãy tư vấn định hướng ngành học, khối thi (A00, A01, B00, C00, D01...), điểm chuẩn tham khảo, cơ hội việc làm & trường Đại học bằng tiếng Việt thân thiện, thấu hiểu và sử dụng định dạng Markdown.";
 
       final contents = _messages
           .map((m) => {
@@ -326,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
           body: jsonEncode({
             'system_instruction': {
               'parts': [
-                {'text': systemPrompt}
+                {'text': langPrompt}
               ]
             },
             'contents': contents,
@@ -400,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final greetingName =
-        widget.userName.isNotEmpty ? widget.userName : 'bạn';
+        _currentName.isNotEmpty ? _currentName : 'bạn';
 
     return Scaffold(
       appBar: AppBar(
@@ -412,12 +405,12 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                color: _primaryColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.smart_toy,
-                color: Color(0xFF6366F1),
+                color: _primaryColor,
                 size: 22,
               ),
             ),
@@ -425,16 +418,18 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'EduPath AI',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
-                    color: Color(0xFF5B46E0),
+                    color: _primaryColor,
                   ),
                 ),
                 Text(
-                  'Chào buổi sáng, $greetingName! 👋',
+                  _language == 'en'
+                      ? 'Good morning, $greetingName! 👋'
+                      : 'Chào buổi sáng, $greetingName! 👋',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -450,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
               widget.themeMode == ThemeMode.light
                   ? Icons.dark_mode_outlined
                   : Icons.light_mode_outlined,
-              color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6366F1),
+              color: _primaryColor,
             ),
             tooltip: 'Chuyển Chế Độ Tối/Sáng',
             onPressed: widget.onToggleTheme,
@@ -458,9 +453,9 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(
               Icons.settings_outlined,
-              color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6366F1),
+              color: _primaryColor,
             ),
-            tooltip: 'Cài đặt hệ thống',
+            tooltip: 'Cài đặt Profile',
             onPressed: _openSettingsDialog,
           ),
           const SizedBox(width: 6),
@@ -477,6 +472,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildChatTab(isDark),
                     HollandQuizWidget(onSendToChat: _sendFromOtherTabs),
                     CareerExplorerWidget(onAskAI: _sendFromOtherTabs),
+                    ProfileScreenWidget(
+                      userName: _currentName,
+                      userEmail: widget.userEmail,
+                      avatarUrl: _avatarUrl,
+                      selectedLanguage: _language,
+                      primaryColor: _primaryColor,
+                      apiKey: _apiKey,
+                      onUpdateName: _updateName,
+                      onUpdateAvatar: _updateAvatar,
+                      onUpdateColor: _updateColor,
+                      onUpdateLanguage: _updateLanguage,
+                      onUpdateApiKey: _updateApiKey,
+                      onLogout: widget.onLogout,
+                    ),
                   ],
                 ),
               ),
@@ -487,6 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.bottomCenter,
             child: FloatingBottomDock(
               currentIndex: _currentTabIndex,
+              primaryColor: _primaryColor,
               onTapTab: (index) {
                 setState(() {
                   _currentTabIndex = index;
@@ -520,8 +530,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     width: 32,
                     height: 32,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF6366F1),
+                    decoration: BoxDecoration(
+                      color: _primaryColor,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -575,18 +585,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 if (isUser) ...[
                   const SizedBox(width: 8),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEC4899),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 18,
-                    ),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: const Color(0xFFEC4899),
+                    backgroundImage: _avatarUrl.isNotEmpty
+                        ? NetworkImage(_avatarUrl)
+                        : null,
+                    child: _avatarUrl.isEmpty
+                        ? const Icon(Icons.person, color: Colors.white, size: 18)
+                        : null,
                   ),
                 ]
               ],
@@ -601,8 +608,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   width: 32,
                   height: 32,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF6366F1),
+                  decoration: BoxDecoration(
+                    color: _primaryColor,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -621,12 +628,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         : const Color(0xFFF1EAFF),
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF6366F1),
+                      color: _primaryColor,
                     ),
                   ),
                 ),
@@ -649,17 +656,17 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: Icon(
                   Icons.add_circle_outline,
-                  color: isDark
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFF6366F1),
+                  color: _primaryColor,
                 ),
                 onPressed: () {},
               ),
               Expanded(
                 child: TextField(
                   controller: _inputController,
-                  decoration: const InputDecoration(
-                    hintText: 'Hỏi EduPath về ngành nghề,...',
+                  decoration: InputDecoration(
+                    hintText: _language == 'en'
+                        ? 'Ask EduPath about careers,...'
+                        : 'Hỏi EduPath về ngành nghề,...',
                     border: InputBorder.none,
                   ),
                   onSubmitted: _sendMessage,
@@ -668,8 +675,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF6366F1),
+                decoration: BoxDecoration(
+                  color: _primaryColor,
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
