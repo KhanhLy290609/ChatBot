@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen>
           .toList();
 
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKeyToUse');
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKeyToUse');
 
       final response = await http.post(
         url,
@@ -232,6 +232,14 @@ class _HomeScreenState extends State<HomeScreen>
                 'Không có phản hồi từ AI.';
         setState(() {
           _messages.add({'role': 'assistant', 'content': botText});
+        });
+      } else if (response.statusCode == 429) {
+        setState(() {
+          _messages.add({
+            'role': 'assistant',
+            'content':
+                '⚠️ Tài khoản Gemini API vừa chạm giới hạn tần suất (Quota Exceeded / 429). Vui lòng chờ khoảng 30 giây rồi gửi lại câu hỏi nhé!'
+          });
         });
       } else {
         setState(() {
