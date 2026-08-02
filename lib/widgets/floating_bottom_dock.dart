@@ -4,17 +4,20 @@ class FloatingBottomDock extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTapTab;
   final Color primaryColor;
+  final String language;
 
   const FloatingBottomDock({
     super.key,
     required this.currentIndex,
     required this.onTapTab,
     this.primaryColor = const Color(0xFF6366F1),
+    this.language = 'vi',
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEn = language == 'en';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -44,21 +47,21 @@ class FloatingBottomDock extends StatelessWidget {
             index: 1,
             icon: Icons.psychology_outlined,
             activeIcon: Icons.psychology,
-            label: 'Holland',
+            label: isEn ? 'Holland' : 'Holland',
             isDark: isDark,
           ),
           _buildNavItem(
             index: 2,
             icon: Icons.work_outline,
             activeIcon: Icons.work,
-            label: 'Ngành Hot',
+            label: isEn ? 'Careers' : 'Ngành Hot',
             isDark: isDark,
           ),
           _buildNavItem(
             index: 3,
             icon: Icons.person_outline,
             activeIcon: Icons.person,
-            label: 'Cá Nhân',
+            label: isEn ? 'Profile' : 'Cá Nhân',
             isDark: isDark,
           ),
         ],

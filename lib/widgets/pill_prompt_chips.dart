@@ -3,27 +3,37 @@ import 'package:flutter/material.dart';
 class PillPromptChips extends StatelessWidget {
   final Function(String) onPromptSelected;
   final Color primaryColor;
+  final String language;
 
   const PillPromptChips({
     super.key,
     required this.onPromptSelected,
     this.primaryColor = const Color(0xFF6366F1),
+    this.language = 'vi',
   });
 
-  static const List<String> _prompts = [
+  static const List<String> _promptsVi = [
     'Tôi giỏi Toán và Lý',
     'Khối A01 học ngành gì?',
     'AI có phù hợp với mình?',
     'Ngành hot 2026',
   ];
 
+  static const List<String> _promptsEn = [
+    'I am good at Math & Physics',
+    'What majors are in Block A01?',
+    'Is AI suitable for me?',
+    'Hot Careers in 2026',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final prompts = language == 'en' ? _promptsEn : _promptsVi;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: _prompts.map((text) {
+      children: prompts.map((text) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 10.0),
           child: Material(

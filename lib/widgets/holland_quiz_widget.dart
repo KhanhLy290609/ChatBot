@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class HollandQuizWidget extends StatefulWidget {
   final Function(String) onSendToChat;
   final Color primaryColor;
+  final String language;
 
   const HollandQuizWidget({
     super.key,
     required this.onSendToChat,
     this.primaryColor = const Color(0xFF6366F1),
+    this.language = 'vi',
   });
 
   @override
@@ -18,7 +20,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
   int _currentQ = 0;
   final Map<int, String> _answers = {};
 
-  static const Map<String, Map<String, dynamic>> _hollandInfo = {
+  static const Map<String, Map<String, dynamic>> _hollandInfoVi = {
     'R': {
       'name': 'Kỹ Thuật / Thực Thực (Realistic)',
       'desc': 'Bạn có thiên hướng thích làm việc với công cụ, máy móc, vật dụng thực tế hoặc hoạt động ngoài trời.',
@@ -51,7 +53,40 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
     },
   };
 
-  final List<Map<String, dynamic>> _questions = const [
+  static const Map<String, Map<String, dynamic>> _hollandInfoEn = {
+    'R': {
+      'name': 'Realistic (Practical / Technical)',
+      'desc': 'You prefer working with tools, machinery, physical objects, or outdoor activities.',
+      'majors': ['IT / Automotive', 'Mechanical Engineering', 'Electronics', 'Construction'],
+    },
+    'I': {
+      'name': 'Investigative (Research / Analytical)',
+      'desc': 'You have strong analytical thinking, enjoy solving complex problems and acquiring new knowledge.',
+      'majors': ['Computer Science / AI', 'Data Science', 'Biotechnology', 'Medicine'],
+    },
+    'A': {
+      'name': 'Artistic (Creative / Imaginative)',
+      'desc': 'You are imaginative, independent, and possess a unique artistic soul.',
+      'majors': ['Graphic Design / UI UX', 'Media & Comm', 'Architecture', 'Fashion'],
+    },
+    'S': {
+      'name': 'Social (Helping / Teaching)',
+      'desc': 'You enjoy sharing, teaching, counseling, and helping people around you.',
+      'majors': ['Pedagogy / Education', 'Psychology', 'Human Resources', 'Social Work'],
+    },
+    'E': {
+      'name': 'Enterprising (Leadership / Business)',
+      'desc': 'You are confident, communicative, enjoy leading teams, business, and driving advancement.',
+      'majors': ['Business Admin', 'Marketing / PR', 'Finance & Banking', 'Law'],
+    },
+    'C': {
+      'name': 'Conventional (Organized / Detail-Oriented)',
+      'desc': 'You are careful, organized, skilled at data processing and structured workflows.',
+      'majors': ['Accounting / Auditing', 'Public Finance', 'Data Statistics', 'Administration'],
+    },
+  };
+
+  final List<Map<String, dynamic>> _questionsVi = const [
     {
       'question': '1. Khi rảnh rỗi, bạn thích thực hiện hoạt động nào nhất?',
       'options': [
@@ -87,12 +122,52 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
     }
   ];
 
+  final List<Map<String, dynamic>> _questionsEn = const [
+    {
+      'question': '1. In your free time, which activity do you enjoy most?',
+      'options': [
+        {'text': 'Fixing things, assembling machines or Lego.', 'type': 'R'},
+        {'text': 'Reading science books, solving difficult math problems.', 'type': 'I'},
+        {'text': 'Drawing, writing, photography, listening to music.', 'type': 'A'},
+        {'text': 'Chatting, comforting, helping friends.', 'type': 'S'},
+        {'text': 'Being team leader, persuading others.', 'type': 'E'},
+        {'text': 'Organizing things neatly, managing schedules.', 'type': 'C'},
+      ]
+    },
+    {
+      'question': '2. Which high school subject makes you feel most confident?',
+      'options': [
+        {'text': 'Physics lab, Technology, Physical Education.', 'type': 'R'},
+        {'text': 'Mathematics, Chemistry, Biology, IT.', 'type': 'I'},
+        {'text': 'Literature, Fine Arts, Music.', 'type': 'A'},
+        {'text': 'English, Civics, Experiential Activities.', 'type': 'S'},
+        {'text': 'Geography, Group Presentations.', 'type': 'E'},
+        {'text': 'Office IT, Taking neat notes.', 'type': 'C'},
+      ]
+    },
+    {
+      'question': '3. Your favorite role during group projects?',
+      'options': [
+        {'text': 'Preparing props, technical implementation.', 'type': 'R'},
+        {'text': 'Researching materials, solving tough questions.', 'type': 'I'},
+        {'text': 'Designing slides, creative scriptwriting.', 'type': 'A'},
+        {'text': 'Supporting team members with questions.', 'type': 'S'},
+        {'text': 'Team leader, task assignment.', 'type': 'E'},
+        {'text': 'Compiling final work, checking errors & deadlines.', 'type': 'C'},
+      ]
+    }
+  ];
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = widget.primaryColor;
+    final isEn = widget.language == 'en';
 
-    if (_currentQ >= _questions.length) {
+    final hollandInfo = isEn ? _hollandInfoEn : _hollandInfoVi;
+    final questions = isEn ? _questionsEn : _questionsVi;
+
+    if (_currentQ >= questions.length) {
       final counts = <String, int>{'R': 0, 'I': 0, 'A': 0, 'S': 0, 'E': 0, 'C': 0};
       for (final type in _answers.values) {
         counts[type] = (counts[type] ?? 0) + 1;
@@ -100,7 +175,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
       final sorted = counts.keys.toList()
         ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
       final topType = sorted.first;
-      final info = _hollandInfo[topType]!;
+      final info = hollandInfo[topType]!;
       final List<String> majors = List<String>.from(info['majors']);
 
       return ListView(
@@ -152,7 +227,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Kết quả Trắc nghiệm Holland',
+                  isEn ? 'Holland Test Results' : 'Kết quả Trắc nghiệm Holland',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -161,7 +236,9 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Mã $topType - ${info['name']}',
+                  isEn
+                      ? 'Holland Code $topType - ${info['name']}'
+                      : 'Mã $topType - ${info['name']}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
@@ -180,11 +257,11 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Các nhóm ngành gợi ý:',
-                    style: TextStyle(
+                    isEn ? 'Recommended Major Groups:' : 'Các nhóm ngành gợi ý:',
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
@@ -224,13 +301,17 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                     ),
                   ),
                   icon: const Icon(Icons.send_rounded, size: 18),
-                  label: const Text(
-                    'Gửi Cho AI Tư Vấn Ngành Cụ Thể',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  label: Text(
+                    isEn
+                        ? 'Send Result to AI for Detailed Counseling'
+                        : 'Gửi Cho AI Tư Vấn Ngành Cụ Thể',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   onPressed: () {
                     widget.onSendToChat(
-                      'Tớ vừa hoàn thành bài trắc nghiệm Holland và có kết quả nhóm nổi bật nhất là **Mã $topType - ${info['name']}**.\nNhờ EduPath AI phân tích chi tiết các ngành học phù hợp, điểm chuẩn và trường Đại học tương ứng!',
+                      isEn
+                          ? 'I just completed the Holland test and my top group is **Holland Code $topType - ${info['name']}**.\nPlease provide detailed analysis on suitable university majors and career paths!'
+                          : 'Tớ vừa hoàn thành bài trắc nghiệm Holland và có kết quả nhóm nổi bật nhất là **Mã $topType - ${info['name']}**.\nNhờ EduPath AI phân tích chi tiết các ngành học phù hợp, điểm chuẩn và trường Đại học tương ứng!',
                     );
                   },
                 ),
@@ -243,7 +324,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
                     });
                   },
                   child: Text(
-                    'Làm lại trắc nghiệm',
+                    isEn ? 'Retake Test' : 'Làm lại trắc nghiệm',
                     style: TextStyle(
                       color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280),
                     ),
@@ -256,7 +337,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
       );
     }
 
-    final q = _questions[_currentQ];
+    final q = questions[_currentQ];
     final options = q['options'] as List;
 
     return ListView(
@@ -265,7 +346,7 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
-            value: (_currentQ + 1) / _questions.length,
+            value: (_currentQ + 1) / questions.length,
             color: primary,
             backgroundColor: isDark
                 ? const Color(0xFF1E293B)
@@ -275,7 +356,9 @@ class _HollandQuizWidgetState extends State<HollandQuizWidget> {
         ),
         const SizedBox(height: 16),
         Text(
-          'Câu ${_currentQ + 1} / ${_questions.length}',
+          isEn
+              ? 'Question ${_currentQ + 1} / ${questions.length}'
+              : 'Câu ${_currentQ + 1} / ${questions.length}',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,

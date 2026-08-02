@@ -5,17 +5,20 @@ class CareerExplorerWidget extends StatelessWidget {
   final Function(String) onAskAI;
   final List<CareerModel> careers;
   final Color primaryColor;
+  final String language;
 
   const CareerExplorerWidget({
     super.key,
     required this.onAskAI,
     this.careers = defaultCareers,
     this.primaryColor = const Color(0xFF6366F1),
+    this.language = 'vi',
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEn = language == 'en';
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -65,7 +68,7 @@ class CareerExplorerWidget extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
-                      'Khối ${c.block}',
+                      isEn ? 'Block ${c.block}' : 'Khối ${c.block}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -91,7 +94,9 @@ class CareerExplorerWidget extends StatelessWidget {
                       size: 16, color: Colors.green),
                   const SizedBox(width: 6),
                   Text(
-                    'Lương tham khảo: ${c.salary}',
+                    isEn
+                        ? 'Reference Salary: ${c.salary}'
+                        : 'Lương tham khảo: ${c.salary}',
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: Colors.green,
@@ -111,13 +116,15 @@ class CareerExplorerWidget extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.auto_awesome, size: 16),
-                label: const Text(
-                  'Hỏi AI Chi Tiết Ngành Này',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                label: Text(
+                  isEn ? 'Ask AI About This Major' : 'Hỏi AI Chi Tiết Ngành Này',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 onPressed: () {
                   onAskAI(
-                    'Nhờ EduPath AI tư vấn chi tiết về ngành **${c.title}** (Khối ${c.block}): Điểm chuẩn, các trường ĐH top đầu và cơ hội việc làm!',
+                    isEn
+                        ? 'Please advise in detail about **${c.title}** (Block ${c.block}): Benchmark scores, top universities, and career opportunities!'
+                        : 'Nhờ EduPath AI tư vấn chi tiết về ngành **${c.title}** (Khối ${c.block}): Điểm chuẩn, các trường ĐH top đầu và cơ hội việc làm!',
                   );
                 },
               )

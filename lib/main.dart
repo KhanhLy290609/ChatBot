@@ -473,10 +473,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     HollandQuizWidget(
                       onSendToChat: _sendFromOtherTabs,
                       primaryColor: _primaryColor,
+                      language: _language,
                     ),
                     CareerExplorerWidget(
                       onAskAI: _sendFromOtherTabs,
                       primaryColor: _primaryColor,
+                      language: _language,
                     ),
                     ProfileScreenWidget(
                       userName: _currentName,
@@ -503,6 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FloatingBottomDock(
               currentIndex: _currentTabIndex,
               primaryColor: _primaryColor,
+              language: _language,
               onTapTab: (index) {
                 setState(() {
                   _currentTabIndex = index;
@@ -519,11 +522,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       children: [
-        HeroWelcomeCard(primaryColor: _primaryColor),
+        HeroWelcomeCard(
+          primaryColor: _primaryColor,
+          language: _language,
+        ),
         const SizedBox(height: 20),
         PillPromptChips(
           onPromptSelected: _sendMessage,
           primaryColor: _primaryColor,
+          language: _language,
         ),
         const SizedBox(height: 16),
         ..._messages.map((msg) {
