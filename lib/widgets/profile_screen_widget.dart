@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -73,6 +75,24 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
     super.dispose();
   }
 
+  Future<Uint8List> _downscaleImageBytes(Uint8List inputBytes, {int targetWidth = 200}) async {
+    try {
+      final codec = await ui.instantiateImageCodec(
+        inputBytes,
+        targetWidth: targetWidth,
+      );
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData != null) {
+        return byteData.buffer.asUint8List();
+      }
+    } catch (e) {
+      debugPrint('Downscale avatar error: $e');
+    }
+    return inputBytes;
+  }
+
   Future<void> _pickImageFromDevice() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -83,15 +103,15 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         if (file.bytes != null) {
-          final base64Image = 'data:image/png;base64,${base64Encode(file.bytes!)}';
+          final smallBytes = await _downscaleImageBytes(file.bytes!, targetWidth: 200);
+          final base64Image = 'data:image/png;base64,${base64Encode(smallBytes)}';
           widget.onUpdateAvatar(base64Image);
           if (mounted) {
-            Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(widget.selectedLanguage == 'en'
-                    ? '🎉 Uploaded avatar from device successfully!'
-                    : '🎉 Đã chọn ảnh từ thiết bị làm Avatar thành công!'),
+                    ? '🎉 Personal avatar updated successfully!'
+                    : '🎉 Đã chọn & cập nhật ảnh Avatar thành công!'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -99,9 +119,10 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
         }
       }
     } catch (e) {
+      debugPrint('Pick image error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('⚠️ Không thể tải ảnh: $e')),
+          SnackBar(content: Text('⚠️ Lỗi chọn ảnh: $e')),
         );
       }
     }
@@ -113,63 +134,74 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(isEn ? 'Change Personal Avatar' : 'Thay Đổi Ảnh Avatar Cá Nhân'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.primaryColor,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 44),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50),
+        content: StatefulBuilder(
+          builder: (dialogCtx, setDialogState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 46),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                ),
+                icon: const Icon(Icons.upload_file_rounded, size: 20),
+                label: Text(
+                  isEn ? '📁 Pick Image From Device' : '📁 Chọn Ảnh Từ Thiết Bị',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _pickImageFromDevice();
+                },
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              Text(
+                isEn ? 'Or choose sample avatar:' : 'Hoặc chọn Avatar mẫu:',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _presetAvatars.map((preset) {
+                  return ActionChip(
+                    label: Text(preset['label']!),
+                    onPressed: () {
+                      widget.onUpdateAvatar(preset['url']!);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(isEn
+                              ? 'Avatar updated!'
+                              : 'Đã cập nhật Avatar mẫu thành công!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                isEn ? 'Or paste Image URL:' : 'Hoặc dán đường dẫn ảnh (URL):',
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _avatarUrlController,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: 'https://example.com/avatar.png',
+                  labelText: isEn ? 'Image URL' : 'URL Ảnh Cá Nhân',
                 ),
               ),
-              icon: const Icon(Icons.upload_file_rounded, size: 18),
-              label: Text(
-                isEn ? '📁 Pick Image From Device' : '📁 Chọn Ảnh Từ Thiết Bị',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              onPressed: () {
-                Navigator.pop(ctx);
-                _pickImageFromDevice();
-              },
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Text(
-              isEn ? 'Or paste Image URL:' : 'Hoặc dán đường dẫn ảnh (URL):',
-              style: const TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _avatarUrlController,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                hintText: 'https://example.com/avatar.png',
-                labelText: isEn ? 'Image URL' : 'URL Ảnh Cá Nhân',
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              isEn ? 'Or choose sample avatar:' : 'Hoặc chọn Avatar mẫu:',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: _presetAvatars.map((preset) {
-                return ActionChip(
-                  label: Text(preset['label']!),
-                  onPressed: () {
-                    _avatarUrlController.text = preset['url']!;
-                  },
-                );
-              }).toList(),
-            )
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -179,7 +211,10 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
             onPressed: () {
-              widget.onUpdateAvatar(_avatarUrlController.text.trim());
+              final url = _avatarUrlController.text.trim();
+              if (url.isNotEmpty) {
+                widget.onUpdateAvatar(url);
+              }
               Navigator.pop(ctx);
             },
             child: Text(

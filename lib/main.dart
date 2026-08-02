@@ -239,11 +239,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _updateAvatar(String newAvatar) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_avatar_url', newAvatar);
     setState(() {
       _avatarUrl = newAvatar;
     });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_avatar_url', newAvatar);
+    } catch (e) {
+      debugPrint('Save avatar to prefs error: $e');
+    }
   }
 
   Future<void> _updateColor(Color newColor) async {
