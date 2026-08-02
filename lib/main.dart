@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'widgets/holland_quiz_widget.dart';
 import 'widgets/career_explorer_widget.dart';
@@ -85,9 +84,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  static String get _defaultApiKey =>
+  static String get _apiKey =>
       utf8.decode(base64.decode('QVEuQWI4Uk42STl4Wi1BOWp5ZnplZjdLSXg2Q3BSVWF2YURUQ2QzTy1JcDNtaXJ2b2k0QQ=='));
-  String _apiKey = _defaultApiKey;
 
   final List<Map<String, String>> _messages = [
     {
@@ -103,92 +101,10 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadApiKey();
-  }
-
-  Future<void> _loadApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _apiKey = prefs.getString('gemini_api_key') ?? _defaultApiKey;
-      if (_apiKey.isEmpty) {
-        _apiKey = _defaultApiKey;
-      }
-    });
-  }
-
-  Future<void> _saveApiKey(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('gemini_api_key', key);
-    setState(() {
-      _apiKey = key;
-    });
-  }
-
-  void _openSettingsDialog() {
-    final keyController = TextEditingController(text: _apiKey);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.key, color: Color(0xFF6366F1)),
-            SizedBox(width: 8),
-            Text(
-              'Cấu Hình Gemini API Key',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Nhập API Key cá nhân của bạn để sử dụng Chatbot AI:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: keyController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'AIzaSy...',
-                labelText: 'Gemini API Key',
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Bảo mật 100%: API Key chỉ lưu trong thiết bị của bạn.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              _saveApiKey(keyController.text.trim());
-              Navigator.pop(ctx);
-            },
-            child: const Text('Lưu Key'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
-
-    final apiKeyToUse = _apiKey.trim().isNotEmpty ? _apiKey.trim() : _defaultApiKey;
 
     setState(() {
       _messages.add({'role': 'user', 'content': text});
@@ -210,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen>
           .toList();
 
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$apiKeyToUse');
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$_apiKey');
 
       final response = await http.post(
         url,
@@ -254,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen>
           _messages.add({
             'role': 'assistant',
             'content':
-                '⚠️ Lỗi kết nối Gemini API (${response.statusCode}). Vui lòng kiểm tra lại API Key trong phần Cài đặt!'
+                '⚠️ Lỗi kết nối Gemini API (${response.statusCode}). Vui lòng thử lại sau giây lát!'
           });
         });
       }
@@ -279,8 +195,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isKeySet = _apiKey.trim().length > 10;
-
     return Scaffold(
       appBar: AppBar(
         title: const Row(
@@ -296,18 +210,11 @@ class _HomeScreenState extends State<HomeScreen>
         actions: [
           IconButton(
             icon: Icon(
-              isKeySet ? Icons.vpn_key : Icons.vpn_key_off,
-              color: isKeySet ? Colors.green : Colors.red,
-            ),
-            tooltip: 'Cấu hình Gemini API Key',
-            onPressed: _openSettingsDialog,
-          ),
-          IconButton(
-            icon: Icon(
               widget.themeMode == ThemeMode.light
                   ? Icons.dark_mode
                   : Icons.light_mode,
             ),
+            tooltip: 'Chuyển Chế Độ Tối/Sáng',
             onPressed: widget.onToggleTheme,
           ),
         ],
@@ -325,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildChatTab(isKeySet),
+          _buildChatTab(),
           HollandQuizWidget(onSendToChat: _sendFromOtherTabs),
           CareerExplorerWidget(onAskAI: _sendFromOtherTabs),
         ],
@@ -333,30 +240,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildChatTab(bool isKeySet) {
+  Widget _buildChatTab() {
     return Column(
       children: [
-        if (!isKeySet)
-          Container(
-            color: Colors.red.shade50,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.red),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Chưa có Gemini API Key. Nhấp icon chìa khóa để cài đặt!',
-                    style: TextStyle(color: Colors.red, fontSize: 13),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _openSettingsDialog,
-                  child: const Text('Cài đặt'),
-                )
-              ],
-            ),
-          ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.all(8),
