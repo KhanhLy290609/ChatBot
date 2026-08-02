@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen>
           .toList();
 
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKeyToUse');
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$apiKeyToUse');
 
       final response = await http.post(
         url,
@@ -227,9 +227,17 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final botText =
-            data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-                'Không có phản hồi từ AI.';
+        String botText = 'Không có phản hồi từ AI.';
+        final parts = data['candidates']?[0]?['content']?['parts'] as List?;
+        if (parts != null && parts.isNotEmpty) {
+          for (final part in parts) {
+            if (part is Map &&
+                part.containsKey('text') &&
+                (part['text'] as String).trim().isNotEmpty) {
+              botText = part['text'] as String;
+            }
+          }
+        }
         setState(() {
           _messages.add({'role': 'assistant', 'content': botText});
         });
