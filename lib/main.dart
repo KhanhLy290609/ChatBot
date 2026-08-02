@@ -10,6 +10,7 @@ import 'widgets/pill_prompt_chips.dart';
 import 'widgets/floating_bottom_dock.dart';
 import 'widgets/holland_quiz_widget.dart';
 import 'widgets/career_explorer_widget.dart';
+import 'widgets/login_screen_widget.dart';
 
 void main() {
   runApp(const EduPathApp());
@@ -66,7 +67,89 @@ class _EduPathAppState extends State<EduPathApp> {
           ThemeData.dark().textTheme,
         ),
       ),
-      home: HomeScreen(onToggleTheme: toggleTheme, themeMode: _themeMode),
+      home: RootNavigation(onToggleTheme: toggleTheme, themeMode: _themeMode),
+    );
+  }
+}
+
+class RootNavigation extends StatefulWidget {
+  final VoidCallback onToggleTheme;
+  final ThemeMode themeMode;
+
+  const RootNavigation({
+    super.key,
+    required this.onToggleTheme,
+    required this.themeMode,
+  });
+
+  @override
+  State<RootNavigation> createState() => _RootNavigationState();
+}
+
+class _RootNavigationState extends State<RootNavigation> {
+  bool _isLoggedIn = false;
+  String _userName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedName = prefs.getString('user_name');
+    final loggedIn = prefs.getBool('is_logged_in') ?? false;
+
+    if (loggedIn && savedName != null && savedName.isNotEmpty) {
+      setState(() {
+        _isLoggedIn = true;
+        _userName = savedName;
+      });
+    }
+  }
+
+  Future<void> _handleLoginSuccess(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', name);
+    await prefs.setBool('is_logged_in', true);
+    setState(() {
+      _userName = name;
+      _isLoggedIn = true;
+    });
+  }
+
+  Future<void> _handleGuestAccess() async {
+    setState(() {
+      _userName = 'Khách';
+      _isLoggedIn = true;
+    });
+  }
+
+  Future<void> _handleLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_name');
+    await prefs.setBool('is_logged_in', false);
+    setState(() {
+      _isLoggedIn = false;
+      _userName = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isLoggedIn) {
+      return LoginScreenWidget(
+        onLoginSuccess: _handleLoginSuccess,
+        onGuestAccess: _handleGuestAccess,
+      );
+    }
+
+    return HomeScreen(
+      onToggleTheme: widget.onToggleTheme,
+      themeMode: widget.themeMode,
+      userName: _userName,
+      onLogout: _handleLogout,
     );
   }
 }
@@ -74,11 +157,15 @@ class _EduPathAppState extends State<EduPathApp> {
 class HomeScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final ThemeMode themeMode;
+  final String userName;
+  final VoidCallback onLogout;
 
   const HomeScreen({
     super.key,
     required this.onToggleTheme,
     required this.themeMode,
+    required this.userName,
+    required this.onLogout,
   });
 
   @override
@@ -129,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.settings, color: Color(0xFF6366F1)),
             SizedBox(width: 8),
             Text(
-              'Cấu Hình Gemini API Key',
+              'Cài Đặt Hệ Thống',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
@@ -138,8 +225,13 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Đang đăng nhập: ${widget.userName}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const Divider(height: 20),
             const Text(
-              'Nhập API Key cá nhân của bạn nếu muốn đổi Key mặc định:',
+              'Cấu hình Gemini API Key cá nhân:',
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 12),
@@ -152,17 +244,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 labelText: 'Gemini API Key',
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Mặc định: Key hệ thống đã được tích hợp sẵn.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+            icon: const Icon(Icons.logout, size: 16),
+            label: const Text('Đăng xuất'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              widget.onLogout();
+            },
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -295,6 +387,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final greetingName =
+        widget.userName.isNotEmpty ? widget.userName : 'bạn';
 
     return Scaffold(
       appBar: AppBar(
@@ -328,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  'Chào buổi sáng! 👋',
+                  'Chào buổi sáng, $greetingName! 👋',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -339,7 +433,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          // Moon/Sun icon next to far-right Gear icon
           IconButton(
             icon: Icon(
               widget.themeMode == ThemeMode.light
@@ -350,13 +443,12 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Chuyển Chế Độ Tối/Sáng',
             onPressed: widget.onToggleTheme,
           ),
-          // Gear Settings icon on the FAR RIGHT
           IconButton(
             icon: Icon(
               Icons.settings_outlined,
               color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6366F1),
             ),
-            tooltip: 'Cài đặt API Key',
+            tooltip: 'Cài đặt hệ thống',
             onPressed: _openSettingsDialog,
           ),
           const SizedBox(width: 6),
@@ -376,11 +468,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              // Reserve bottom space for floating dock
               const SizedBox(height: 70),
             ],
           ),
-          // Floating Bottom Navigation Dock
           Align(
             alignment: Alignment.bottomCenter,
             child: FloatingBottomDock(
@@ -532,7 +622,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         const SizedBox(height: 12),
-        // Floating Input Field Container
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
