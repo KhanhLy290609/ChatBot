@@ -48,7 +48,7 @@ class _EduPathAppState extends State<EduPathApp> {
           secondary: const Color(0xFF8B5CF6),
           surface: const Color(0xFFF8FAFC),
         ),
-        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+        textTheme: GoogleFonts.beVietnamProTextTheme(
           ThemeData.light().textTheme,
         ),
       ),
@@ -62,7 +62,7 @@ class _EduPathAppState extends State<EduPathApp> {
           secondary: const Color(0xFFA78BFA),
           surface: const Color(0xFF0F172A),
         ),
-        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+        textTheme: GoogleFonts.beVietnamProTextTheme(
           ThemeData.dark().textTheme,
         ),
       ),
