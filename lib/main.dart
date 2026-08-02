@@ -571,14 +571,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       color: isUser
                           ? (isDark
-                              ? const Color(0xFF831843)
-                              : const Color(0xFFFCE4FF))
+                              ? _primaryColor.withValues(alpha: 0.28)
+                              : _primaryColor.withValues(alpha: 0.14))
                           : (isDark
-                              ? const Color(0xFF312E81)
-                              : const Color(0xFFF1EAFF)),
+                              ? _primaryColor.withValues(alpha: 0.15)
+                              : _primaryColor.withValues(alpha: 0.07)),
                       borderRadius: BorderRadius.circular(18.0).copyWith(
                         bottomLeft: !isUser ? const Radius.circular(0) : null,
                         bottomRight: isUser ? const Radius.circular(0) : null,
+                      ),
+                      border: Border.all(
+                        color: _primaryColor.withValues(alpha: isDark ? 0.35 : 0.2),
+                        width: 1,
                       ),
                     ),
                     child: isUser
@@ -638,9 +642,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF312E81)
-                        : const Color(0xFFF1EAFF),
+                        ? _primaryColor.withValues(alpha: 0.15)
+                        : _primaryColor.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: _primaryColor.withValues(alpha: isDark ? 0.35 : 0.2),
+                      width: 1,
+                    ),
                   ),
                   child: SizedBox(
                     width: 16,
@@ -658,10 +666,12 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F6FF),
+            color: isDark
+                ? const Color(0xFF1E293B)
+                : _primaryColor.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(50.0),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE9D5FF),
+              color: _primaryColor.withValues(alpha: isDark ? 0.35 : 0.25),
               width: 1,
             ),
           ),
