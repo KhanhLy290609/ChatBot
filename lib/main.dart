@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'widgets/hero_welcome_card.dart';
+import 'widgets/pill_prompt_chips.dart';
+import 'widgets/floating_bottom_dock.dart';
 import 'widgets/holland_quiz_widget.dart';
 import 'widgets/career_explorer_widget.dart';
 
@@ -81,30 +85,106 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  static String get _apiKey =>
-      utf8.decode(base64.decode('QVEuQWI4Uk42SjZtTEZiQnFSSGVFRldVOE5FRnJOQzJlRWVBVVFVeTJXX2RfODV5NzlsSVE='));
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentTabIndex = 0;
+  static String get _defaultApiKey => utf8.decode(base64.decode(
+      'QVEuQWI4Uk42SjZtTEZiQnFSSGVFRldVOE5FRnJOQzJlRWVBVVFVeTJXX2RfODV5NzlsSVE='));
 
-  final List<Map<String, String>> _messages = [
-    {
-      'role': 'assistant',
-      'content':
-          'Xin chào bạn! Tớ là **EduPath AI** - Chuyên gia tư vấn hướng nghiệp chọn ngành Đại học cho học sinh THPT tại Việt Nam 🎓\n\nBạn đang băn khoăn về chọn ngành học, chọn tổ hợp khối thi (A00, A01, B00, C00, D01...), điểm chuẩn tham khảo hay nhu cầu thị trường lao động? Hãy đặt câu hỏi hoặc thử bài **Trắc nghiệm Holland** nhé!'
-    }
-  ];
+  String _apiKey = _defaultApiKey;
+  final List<Map<String, String>> _messages = [];
   bool _isLoading = false;
   final TextEditingController _inputController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _loadApiKey();
+  }
+
+  Future<void> _loadApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _apiKey = prefs.getString('gemini_api_key') ?? _defaultApiKey;
+      if (_apiKey.trim().isEmpty) {
+        _apiKey = _defaultApiKey;
+      }
+    });
+  }
+
+  Future<void> _saveApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('gemini_api_key', key);
+    setState(() {
+      _apiKey = key.trim().isEmpty ? _defaultApiKey : key.trim();
+    });
+  }
+
+  void _openSettingsDialog() {
+    final keyController = TextEditingController(text: _apiKey);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.settings, color: Color(0xFF6366F1)),
+            SizedBox(width: 8),
+            Text(
+              'Cấu Hình Gemini API Key',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nhập API Key cá nhân của bạn nếu muốn đổi Key mặc định:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: keyController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'AIzaSy...',
+                labelText: 'Gemini API Key',
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Mặc định: Key hệ thống đã được tích hợp sẵn.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6366F1),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              _saveApiKey(keyController.text.trim());
+              Navigator.pop(ctx);
+            },
+            child: const Text('Lưu Key'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
+
+    final apiKeyToUse =
+        _apiKey.trim().isNotEmpty ? _apiKey.trim() : _defaultApiKey;
 
     setState(() {
       _messages.add({'role': 'user', 'content': text});
@@ -134,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen>
       http.Response? response;
       for (final modelName in candidateModels) {
         final url = Uri.parse(
-            'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$_apiKey');
+            'https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKeyToUse');
 
         final res = await http.post(
           url,
@@ -178,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen>
           _messages.add({
             'role': 'assistant',
             'content':
-                '⚠️ Hệ thống AI vừa chạm giới hạn tần suất (Quota Exceeded / 429). Vui lòng chờ khoảng 30 giây rồi thử lại câu hỏi nhé!'
+                '⚠️ Hệ thống AI vừa chạm giới hạn tần suất (Quota Exceeded / 429). Vui lòng chờ khoảng 30 giây rồi gửi lại câu hỏi nhé!'
           });
         });
       } else {
@@ -206,163 +286,305 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _sendFromOtherTabs(String message) {
-    _tabController.animateTo(0);
+    setState(() {
+      _currentTabIndex = 0;
+    });
     _sendMessage(message);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        scrolledUnderElevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Row(
           children: [
-            Icon(Icons.school, color: Color(0xFF6366F1), size: 28),
-            SizedBox(width: 10),
-            Text(
-              'EduPath AI',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.smart_toy,
+                color: Color(0xFF6366F1),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'EduPath AI',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    color: Color(0xFF5B46E0),
+                  ),
+                ),
+                Text(
+                  'Chào buổi sáng! 👋',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         actions: [
+          // Moon/Sun icon next to far-right Gear icon
           IconButton(
             icon: Icon(
               widget.themeMode == ThemeMode.light
-                  ? Icons.dark_mode
-                  : Icons.light_mode,
+                  ? Icons.dark_mode_outlined
+                  : Icons.light_mode_outlined,
+              color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6366F1),
             ),
             tooltip: 'Chuyển Chế Độ Tối/Sáng',
             onPressed: widget.onToggleTheme,
           ),
+          // Gear Settings icon on the FAR RIGHT
+          IconButton(
+            icon: Icon(
+              Icons.settings_outlined,
+              color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6366F1),
+            ),
+            tooltip: 'Cài đặt API Key',
+            onPressed: _openSettingsDialog,
+          ),
+          const SizedBox(width: 6),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xFF6366F1),
-          labelColor: const Color(0xFF6366F1),
-          tabs: const [
-            Tab(icon: Icon(Icons.chat_bubble_outline), text: 'Chatbot AI'),
-            Tab(icon: Icon(Icons.explore_outlined), text: 'Trắc Nghiệm Holland'),
-            Tab(icon: Icon(Icons.stars_outlined), text: 'Ngành Học Hot'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Stack(
         children: [
-          _buildChatTab(),
-          HollandQuizWidget(onSendToChat: _sendFromOtherTabs),
-          CareerExplorerWidget(onAskAI: _sendFromOtherTabs),
+          Column(
+            children: [
+              Expanded(
+                child: IndexedStack(
+                  index: _currentTabIndex,
+                  children: [
+                    _buildChatTab(isDark),
+                    HollandQuizWidget(onSendToChat: _sendFromOtherTabs),
+                    CareerExplorerWidget(onAskAI: _sendFromOtherTabs),
+                  ],
+                ),
+              ),
+              // Reserve bottom space for floating dock
+              const SizedBox(height: 70),
+            ],
+          ),
+          // Floating Bottom Navigation Dock
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: FloatingBottomDock(
+              currentIndex: _currentTabIndex,
+              onTapTab: (index) {
+                setState(() {
+                  _currentTabIndex = index;
+                });
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildChatTab() {
-    return Column(
+  Widget _buildChatTab(bool isDark) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              _buildPromptChip('💡 Tớ giỏi Toán và Lý nên chọn ngành gì?'),
-              _buildPromptChip('💻 Khối A01 gồm những ngành CNTT hot nào?'),
-              _buildPromptChip('🎨 Học Thiết kế đồ họa cần chuẩn bị gì?'),
-              _buildPromptChip('📈 Ngành Marketing lương khởi điểm bao nhiêu?'),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _messages.length,
-            itemBuilder: (ctx, idx) {
-              final msg = _messages[idx];
-              final isUser = msg['role'] == 'user';
-              return Align(
-                alignment:
-                    isUser ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(14),
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.82,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? const Color(0xFF6366F1)
-                        : Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16).copyWith(
-                      bottomRight: isUser ? const Radius.circular(0) : null,
-                      bottomLeft: !isUser ? const Radius.circular(0) : null,
+        const HeroWelcomeCard(),
+        const SizedBox(height: 20),
+        PillPromptChips(onPromptSelected: _sendMessage),
+        const SizedBox(height: 16),
+        ..._messages.map((msg) {
+          final isUser = msg['role'] == 'user';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14.0),
+            child: Row(
+              mainAxisAlignment:
+                  isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!isUser) ...[
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF6366F1),
+                      shape: BoxShape.circle,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      )
-                    ],
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
-                  child: isUser
-                      ? Text(
-                          msg['content']!,
-                          style: const TextStyle(color: Colors.white),
-                        )
-                      : MarkdownBody(data: msg['content']!),
+                  const SizedBox(width: 8),
+                ],
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: isUser
+                          ? (isDark
+                              ? const Color(0xFF831843)
+                              : const Color(0xFFFCE4FF))
+                          : (isDark
+                              ? const Color(0xFF312E81)
+                              : const Color(0xFFF1EAFF)),
+                      borderRadius: BorderRadius.circular(18.0).copyWith(
+                        bottomLeft: !isUser ? const Radius.circular(0) : null,
+                        bottomRight: isUser ? const Radius.circular(0) : null,
+                      ),
+                    ),
+                    child: isUser
+                        ? Text(
+                            msg['content']!,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1F2937),
+                              height: 1.45,
+                            ),
+                          )
+                        : MarkdownBody(
+                            data: msg['content']!,
+                            styleSheet: MarkdownStyleSheet(
+                              p: TextStyle(
+                                fontSize: 14.5,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1F2937),
+                                height: 1.45,
+                              ),
+                            ),
+                          ),
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
+                if (isUser) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEC4899),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ]
+              ],
+            ),
+          );
+        }),
         if (_isLoading)
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF6366F1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF312E81)
+                        : const Color(0xFFF1EAFF),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF6366F1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+        const SizedBox(height: 12),
+        // Floating Input Field Container
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 6,
-                offset: const Offset(0, -2),
-              )
-            ],
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F6FF),
+            borderRadius: BorderRadius.circular(50.0),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE9D5FF),
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
+              IconButton(
+                icon: Icon(
+                  Icons.add_circle_outline,
+                  color: isDark
+                      ? const Color(0xFFA78BFA)
+                      : const Color(0xFF6366F1),
+                ),
+                onPressed: () {},
+              ),
               Expanded(
                 child: TextField(
                   controller: _inputController,
                   decoration: const InputDecoration(
-                    hintText: 'Đặt câu hỏi cho EduPath AI...',
+                    hintText: 'Hỏi EduPath về ngành nghề,...',
                     border: InputBorder.none,
                   ),
                   onSubmitted: _sendMessage,
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.send, color: Color(0xFF6366F1)),
-                onPressed: () => _sendMessage(_inputController.text),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF6366F1),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  onPressed: () => _sendMessage(_inputController.text),
+                ),
               ),
             ],
           ),
-        )
+        ),
+        const SizedBox(height: 20),
       ],
-    );
-  }
-
-  Widget _buildPromptChip(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: ActionChip(
-        label: Text(text, style: const TextStyle(fontSize: 12)),
-        onPressed: () => _sendMessage(text),
-      ),
     );
   }
 }
