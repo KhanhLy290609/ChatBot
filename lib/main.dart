@@ -13,6 +13,7 @@ import 'widgets/holland_quiz_widget.dart';
 import 'widgets/career_explorer_widget.dart';
 import 'widgets/login_screen_widget.dart';
 import 'widgets/profile_screen_widget.dart';
+import 'widgets/roleplay_simulation_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -279,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openSettingsDialog() {
     setState(() {
-      _currentTabIndex = 3;
+      _currentTabIndex = 4;
     });
   }
 
@@ -486,6 +487,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       onAskAI: _sendFromOtherTabs,
                       primaryColor: _primaryColor,
                       language: _language,
+                    ),
+                    RoleplaySimulationWidget(
+                      onSendToChat: _sendFromOtherTabs,
+                      primaryColor: _primaryColor,
+                      language: _language,
+                      apiKey: _apiKey,
                     ),
                     ProfileScreenWidget(
                       userName: _currentName,

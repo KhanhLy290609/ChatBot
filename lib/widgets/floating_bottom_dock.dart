@@ -20,8 +20,8 @@ class FloatingBottomDock extends StatelessWidget {
     final isEn = language == 'en';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(50.0),
@@ -47,7 +47,7 @@ class FloatingBottomDock extends StatelessWidget {
             index: 1,
             icon: Icons.psychology_outlined,
             activeIcon: Icons.psychology,
-            label: isEn ? 'Holland' : 'Holland',
+            label: 'Holland',
             isDark: isDark,
           ),
           _buildNavItem(
@@ -59,6 +59,13 @@ class FloatingBottomDock extends StatelessWidget {
           ),
           _buildNavItem(
             index: 3,
+            icon: Icons.theater_comedy_outlined,
+            activeIcon: Icons.theater_comedy,
+            label: isEn ? 'Roleplay' : 'Trải Nghiệm',
+            isDark: isDark,
+          ),
+          _buildNavItem(
+            index: 4,
             icon: Icons.person_outline,
             activeIcon: Icons.person,
             label: isEn ? 'Profile' : 'Cá Nhân',
@@ -84,8 +91,8 @@ class FloatingBottomDock extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
-            : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+            : const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.transparent,
           borderRadius: BorderRadius.circular(40.0),
@@ -94,7 +101,7 @@ class FloatingBottomDock extends StatelessWidget {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              size: 18,
+              size: 17,
               color: isSelected
                   ? Colors.white
                   : (isDark ? Colors.grey.shade400 : const Color(0xFF475569)),
@@ -106,17 +113,17 @@ class FloatingBottomDock extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 11.5,
                 ),
               ),
             ] else ...[
-              const SizedBox(width: 3),
+              const SizedBox(width: 2),
               Text(
                 label,
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade400 : const Color(0xFF475569),
                   fontWeight: FontWeight.w500,
-                  fontSize: 11,
+                  fontSize: 10.5,
                 ),
               ),
             ]
