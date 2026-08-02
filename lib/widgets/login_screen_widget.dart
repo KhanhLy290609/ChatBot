@@ -112,12 +112,16 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🎉 Đăng ký tài khoản "$name" thành công!'),
+          content: Text(
+              '🎉 Đăng ký tài khoản "$name" thành công! Vui lòng nhập mật khẩu để đăng nhập.'),
           backgroundColor: Colors.green,
         ),
       );
 
-      widget.onLoginSuccess(name);
+      setState(() {
+        _isLoginTab = true;
+        _passwordController.clear();
+      });
     }
   }
 
