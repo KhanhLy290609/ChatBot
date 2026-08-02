@@ -601,16 +601,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 if (isUser) ...[
                   const SizedBox(width: 8),
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: const Color(0xFFEC4899),
-                    backgroundImage: _avatarUrl.isNotEmpty
-                        ? NetworkImage(_avatarUrl)
-                        : null,
-                    child: _avatarUrl.isEmpty
-                        ? const Icon(Icons.person, color: Colors.white, size: 18)
-                        : null,
-                  ),
+                  _buildUserAvatarWidget(_avatarUrl),
                 ]
               ],
             ),
@@ -709,6 +700,28 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 20),
       ],
+    );
+  }
+
+  Widget _buildUserAvatarWidget(String url) {
+    if (url.startsWith('data:image')) {
+      try {
+        final base64Str = url.split(',').last;
+        return CircleAvatar(
+          radius: 16,
+          backgroundImage: MemoryImage(base64Decode(base64Str)),
+        );
+      } catch (_) {}
+    } else if (url.startsWith('http')) {
+      return CircleAvatar(
+        radius: 16,
+        backgroundImage: NetworkImage(url),
+      );
+    }
+    return const CircleAvatar(
+      radius: 16,
+      backgroundColor: Color(0xFFEC4899),
+      child: Icon(Icons.person, color: Colors.white, size: 18),
     );
   }
 }

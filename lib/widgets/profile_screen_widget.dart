@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 class ProfileScreenWidget extends StatefulWidget {
@@ -71,29 +73,89 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
     super.dispose();
   }
 
+  Future<void> _pickImageFromDevice() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.bytes != null) {
+          final base64Image = 'data:image/png;base64,${base64Encode(file.bytes!)}';
+          widget.onUpdateAvatar(base64Image);
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(widget.selectedLanguage == 'en'
+                    ? '🎉 Uploaded avatar from device successfully!'
+                    : '🎉 Đã chọn ảnh từ thiết bị làm Avatar thành công!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⚠️ Không thể tải ảnh: $e')),
+        );
+      }
+    }
+  }
+
   void _showAvatarDialog() {
+    final isEn = widget.selectedLanguage == 'en';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Thay Đổi Ảnh Avatar Cá Nhân'),
+        title: Text(isEn ? 'Change Personal Avatar' : 'Thay Đổi Ảnh Avatar Cá Nhân'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Dán đường dẫn ảnh (URL) hoặc chọn bên dưới:'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _avatarUrlController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'https://example.com/avatar.png',
-                labelText: 'URL Ảnh Cá Nhân',
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.primaryColor,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50),
+                ),
               ),
+              icon: const Icon(Icons.upload_file_rounded, size: 18),
+              label: Text(
+                isEn ? '📁 Pick Image From Device' : '📁 Chọn Ảnh Từ Thiết Bị',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _pickImageFromDevice();
+              },
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Hoặc chọn Avatar mẫu:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Text(
+              isEn ? 'Or paste Image URL:' : 'Hoặc dán đường dẫn ảnh (URL):',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _avatarUrlController,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: 'https://example.com/avatar.png',
+                labelText: isEn ? 'Image URL' : 'URL Ảnh Cá Nhân',
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              isEn ? 'Or choose sample avatar:' : 'Hoặc chọn Avatar mẫu:',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -112,7 +174,7 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text(isEn ? 'Cancel' : 'Hủy'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: widget.primaryColor),
@@ -120,16 +182,42 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
               widget.onUpdateAvatar(_avatarUrlController.text.trim());
               Navigator.pop(ctx);
             },
-            child: const Text('Cập Nhật Ảnh', style: TextStyle(color: Colors.white)),
+            child: Text(
+              isEn ? 'Update' : 'Cập Nhật Ảnh',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildAvatarWidget(String url, double radius) {
+    if (url.startsWith('data:image')) {
+      try {
+        final base64Str = url.split(',').last;
+        return CircleAvatar(
+          radius: radius,
+          backgroundImage: MemoryImage(base64Decode(base64Str)),
+        );
+      } catch (_) {}
+    } else if (url.startsWith('http')) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: NetworkImage(url),
+      );
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: widget.primaryColor.withValues(alpha: 0.15),
+      child: Icon(Icons.person, size: radius * 1.1, color: widget.primaryColor),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEn = widget.selectedLanguage == 'en';
 
     return ListView(
       padding: const EdgeInsets.all(20.0),
@@ -156,16 +244,7 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
               Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
-                    radius: 46,
-                    backgroundColor: widget.primaryColor.withValues(alpha: 0.15),
-                    backgroundImage: widget.avatarUrl.isNotEmpty
-                        ? NetworkImage(widget.avatarUrl)
-                        : null,
-                    child: widget.avatarUrl.isEmpty
-                        ? Icon(Icons.person, size: 50, color: widget.primaryColor)
-                        : null,
-                  ),
+                  _buildAvatarWidget(widget.avatarUrl, 46),
                   InkWell(
                     onTap: _showAvatarDialog,
                     borderRadius: BorderRadius.circular(20),
@@ -187,7 +266,9 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
               ),
               const SizedBox(height: 14),
               Text(
-                widget.userName.isNotEmpty ? widget.userName : 'Học sinh',
+                widget.userName.isNotEmpty
+                    ? widget.userName
+                    : (isEn ? 'Student' : 'Học sinh'),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -196,7 +277,9 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
               ),
               const SizedBox(height: 4),
               Text(
-                widget.userEmail.isNotEmpty ? widget.userEmail : 'Chưa có Email',
+                widget.userEmail.isNotEmpty
+                    ? widget.userEmail
+                    : (isEn ? 'No Email registered' : 'Chưa có Email'),
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark ? Colors.grey.shade400 : const Color(0xFF6B7280),
@@ -208,7 +291,9 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
         const SizedBox(height: 20),
 
         // Section: Personal Information Edit
-        _buildSectionHeader('Tài Khoản & Thông Tin Cá Nhân', isDark),
+        _buildSectionHeader(
+            isEn ? 'Account & Personal Info' : 'Tài Khoản & Thông Tin Cá Nhân',
+            isDark),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
@@ -224,14 +309,17 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'Tên hiển thị',
+                  labelText: isEn ? 'Display Name' : 'Tên hiển thị',
                   prefixIcon: const Icon(Icons.person_outline),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.check),
                     onPressed: () {
                       widget.onUpdateName(_nameController.text.trim());
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Đã cập nhật tên thành công!')),
+                        SnackBar(
+                            content: Text(isEn
+                                ? 'Display name updated!'
+                                : 'Đã cập nhật tên thành công!')),
                       );
                     },
                   ),
@@ -242,9 +330,13 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.email_outlined),
-                title: const Text('Địa chỉ Email / Gmail', style: TextStyle(fontSize: 13)),
+                title: Text(
+                    isEn ? 'Email Address / Gmail' : 'Địa chỉ Email / Gmail',
+                    style: const TextStyle(fontSize: 13)),
                 subtitle: Text(
-                  widget.userEmail.isNotEmpty ? widget.userEmail : 'Khách (Chưa đăng ký)',
+                  widget.userEmail.isNotEmpty
+                      ? widget.userEmail
+                      : (isEn ? 'Guest (Unregistered)' : 'Khách (Chưa đăng ký)'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               )
@@ -254,7 +346,11 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
         const SizedBox(height: 20),
 
         // Section: Appearance Accent Color
-        _buildSectionHeader('Màu Chủ Đạo Giao Diện (Theme Accent)', isDark),
+        _buildSectionHeader(
+            isEn
+                ? 'Theme Accent Color'
+                : 'Màu Chủ Đạo Giao Diện (Theme Accent)',
+            isDark),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
@@ -314,7 +410,9 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
         const SizedBox(height: 20),
 
         // Section: Language Selection
-        _buildSectionHeader('Ngôn Ngữ Ứng Dụng (Language)', isDark),
+        _buildSectionHeader(
+            isEn ? 'Application Language' : 'Ngôn Ngữ Ứng Dụng (Language)',
+            isDark),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
@@ -352,7 +450,8 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
         const SizedBox(height: 20),
 
         // Section: API Key Configuration
-        _buildSectionHeader('Cấu Hình Gemini API Key', isDark),
+        _buildSectionHeader(
+            isEn ? 'Gemini API Key Setup' : 'Cấu Hình Gemini API Key', isDark),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
@@ -374,7 +473,9 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
                 onPressed: () {
                   widget.onUpdateApiKey(_apiKeyController.text.trim());
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã lưu API Key mới thành công!')),
+                    SnackBar(
+                        content: Text(
+                            isEn ? 'Saved API Key!' : 'Đã lưu API Key mới thành công!')),
                   );
                 },
               ),
@@ -395,9 +496,9 @@ class _ProfileScreenWidgetState extends State<ProfileScreenWidget> {
             ),
           ),
           icon: const Icon(Icons.logout, size: 20),
-          label: const Text(
-            'Đăng Xuất Tài Khoản',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          label: Text(
+            isEn ? 'Log Out Account' : 'Đăng Xuất Tài Khoản',
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           onPressed: widget.onLogout,
         ),
