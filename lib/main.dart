@@ -124,12 +124,14 @@ class _RootNavigationState extends State<RootNavigation> {
     }
   }
 
-  Future<void> _handleLoginSuccess(String name) async {
+  Future<void> _handleLoginSuccess(String name, String email) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_name', name);
+    await prefs.setString('user_email', email);
     await prefs.setBool('is_logged_in', true);
     setState(() {
       _userName = name;
+      _userEmail = email;
       _isLoggedIn = true;
     });
   }
@@ -145,6 +147,7 @@ class _RootNavigationState extends State<RootNavigation> {
   Future<void> _handleLogout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_name');
+    await prefs.remove('user_email');
     await prefs.setBool('is_logged_in', false);
     setState(() {
       _isLoggedIn = false;

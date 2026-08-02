@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreenWidget extends StatefulWidget {
-  final Function(String userName) onLoginSuccess;
+  final Function(String userName, String userEmail) onLoginSuccess;
   final VoidCallback onGuestAccess;
 
   const LoginScreenWidget({
@@ -99,7 +99,7 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
       if (authenticated) {
         usersDb[email] = {'name': displayName, 'password': password};
         await prefs.setString('registered_users_db', jsonEncode(usersDb));
-        widget.onLoginSuccess(displayName);
+        widget.onLoginSuccess(displayName, email);
         return;
       }
 
@@ -403,7 +403,7 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
                         icon: const Icon(Icons.g_mobiledata, size: 24),
                         label: const Text('Đăng nhập bằng Google'),
                         onPressed: () {
-                          widget.onLoginSuccess('Học sinh Google');
+                          widget.onLoginSuccess('Học sinh Google', 'google.user@gmail.com');
                         },
                       ),
                     ],
