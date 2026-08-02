@@ -51,42 +51,64 @@ class _LoginScreenWidgetState extends State<LoginScreenWidget> {
 
     if (_isLoginTab) {
       // Logic Đăng Nhập
-      if (!usersDb.containsKey(email)) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                '❌ Tài khoản này chưa được đăng ký! Vui lòng chuyển sang tab Đăng Ký.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+      bool authenticated = false;
+      String displayName = email.contains('@') ? email.split('@')[0] : email;
 
-      final userData = usersDb[email] as Map<String, dynamic>;
-      if (userData['password'] != password) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Mật khẩu không chính xác! Vui lòng kiểm tra lại.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // Đăng nhập thành công!
+      // 1. Thử đăng nhập qua Supabase Auth trực tiếp
       try {
-        await Supabase.instance.client.auth.signInWithPassword(
+        final res = await Supabase.instance.client.auth.signInWithPassword(
           email: email,
           password: password,
         );
+        if (res.user != null) {
+          authenticated = true;
+          final metaName = res.user!.userMetadata?['full_name'] as String?;
+          if (metaName != null && metaName.isNotEmpty) {
+            displayName = metaName;
+          }
+        }
       } catch (e) {
-        debugPrint('Supabase Auth login note: $e');
+        debugPrint('Supabase Auth login check note: $e');
       }
 
-      final displayName = userData['name'] as String? ?? email.split('@')[0];
-      widget.onLoginSuccess(displayName);
+      // 2. Kiểm tra bộ nhớ thiết bị LocalStorage
+      if (!authenticated) {
+        if (usersDb.containsKey(email)) {
+          final userData = usersDb[email] as Map<String, dynamic>;
+          if (userData['password'] == password) {
+            authenticated = true;
+            displayName = userData['name'] as String? ?? displayName;
+          } else {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('❌ Mật khẩu không chính xác! Vui lòng kiểm tra lại.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        }
+      }
+
+      // 3. Nếu xác thực thành công -> Đăng nhập ngay!
+      if (authenticated) {
+        usersDb[email] = {'name': displayName, 'password': password};
+        await prefs.setString('registered_users_db', jsonEncode(usersDb));
+        widget.onLoginSuccess(displayName);
+        return;
+      }
+
+      // 4. Nếu không tìm thấy ở đâu -> Báo chưa đăng ký
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              '❌ Tài khoản này chưa được đăng ký! Vui lòng chuyển sang tab Đăng Ký.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     } else {
       // Logic Đăng Ký
       if (name.isEmpty) {
